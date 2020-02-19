@@ -1,0 +1,294 @@
+% LunaNet_Simulation2
+% Written by Hunter Adams
+% AERO 402 - Spring 2020
+clc;clear;close all;
+
+%% Power Subsystem - Power Module Data Inputs
+
+% Nanoavionics EPS 27SP 
+nano_27sp.max_power = 175; % Watts
+nano_27sp.weight = 200; % Grams
+nano_27sp.op_temp_min = -20; % Celcius
+nano_27sp.op_temp_max = 60; % Celcius
+
+enduro_PM1P.max_power = 65.92; % Watts
+enduro_PM1P.weight = 292; % Grams
+enduro_PM1P.op_temp_min = -40; % Celcius
+enduro_PM1P.op_temp_max = 150; % Celcius
+
+enduro_PM2.max_power = 154.4;% Watts
+enduro_PM2.weight = 750; % Grams
+enduro_PM2.op_temp_min = -40; % Celcius
+enduro_PM2.op_temp_max = 85;% Celcius
+
+isis_mesp.max_power = 64; % Watts
+isis_mesp.weight = 416.7; % Grams
+isis_mesp.op_temp_min = -20; % Celcius
+isis_mesp.op_temp_max = 60; % Celcius
+
+cots_matrix.power_modules(1) = nano_27sp;
+cots_matrix.power_modules(2) = enduro_PM1P;
+cots_matrix.power_modules(3) = enduro_PM2;
+cots_matrix.power_modules(4) = isis_mesp;
+
+%% Communications Subsystem
+
+% Transmitters
+
+% TX-2400 S-Band Transmitter
+tx2400s_trans.transmitter_power = 2.5; % Watts
+tx2400s_trans.frequency = 2.2; % GHz
+tx2400s_trans.transmit_antenna_gain = 8.953; % dBi
+tx2400s_trans.trasnmit_antena_beamwidth = 47.72; % deg
+tx2400s_trans.antenna_point_loss = 2; % dB
+tx2400s_trans.circuit_loss = 0.1; % dB
+tx2400s_trans.atmospheric_attenuation = 0; %dB
+
+% In-House X-Band Transmitter
+ihx_trans.transmitter_power = 20; % Watts
+ihx_trans.frequency = 8.4; % GHz
+ihx_trans.transmit_antenna_gain = 9; % dBi
+ihx_trans.trasnmit_antena_beamwidth = 30; % deg
+ihx_trans.antenna_point_loss = 2; % dB
+ihx_trans.circuit_loss = 0.1; % dB
+ihx_trans.atmospheric_attenuation = -1; %dB
+
+% NASA DSN X-Band Transmitter
+dsnx_trans.transmitter_power = 20; % Watts
+dsnx_trans.frequency = 8.4; % GHz
+dsnx_trans.transmit_antenna_gain = 9; % dBi
+dsnx_trans.trasnmit_antena_beamwidth = 30; % deg
+dsnx_trans.antenna_point_loss = 2; % dB
+dsnx_trans.circuit_loss = 0.1; % dB
+dsnx_trans.atmospheric_attenuation = -1; %dB
+
+
+
+
+
+
+
+
+% Antenna
+
+% In-House 20cm Diameter Parabolic Antenna
+ih20p_rec.recieve_antenna_diameter = 0.2; %m
+ih20p_rec.antenna_efficiency = 0.6; % perc
+ih20p_rec.antenna_pointing_loss = 2;
+ih20p_r
+
+
+
+
+% Elevation Angle [Input]
+elev_angle = 80;% deg
+% Originally 90 because orbit is polar. Selva said that was optomistic,
+% reduced to 80 bc of feedback.
+
+% Radius of the Moon/Planetary Body [Input]
+rad_moon = 1737.1;% km
+
+% Altitude of the Ground Station [Input - Shackelton Crater]
+alt_ground = 0.002;  % km
+
+% Latitude of the Ground Station [Input - Shackelton Crater]
+lat_ground = 89.54;   % deg
+
+
+
+% ''Simulation''
+plot_vals = [];
+
+% S-Band Frequency struct creation
+s_band.frequency = 2.2; %GHz
+s_band.linkbudget = [];
+s_band.altitude = [];
+s_band.satellites = [];
+
+% X-Band Frequency struct creation
+x_band.frequency = 8.4;
+x_band.linkbudget = [];
+x_band.altitude = [];
+x_band.satellites = [];
+
+
+% for loop creation for varying band types
+for band_freq = [s_band.frequency, x_band.frequency]
+    
+    i = 1; % iteration counter 1
+    
+    % for loop creation for varying Satellite Altitude [Input | km]
+    for alt_sat = 100:10:2000
+        
+        if(band_freq == s_band.frequency)
+        s_band.altitude(i,1) = alt_sat; % make altitude list for s-band
+        else
+        x_band.altitude(i,1) = alt_sat; % make altitude list for x-band
+        end
+        
+
+        
+        % Link Budget Calculation
+            % For simulation using COTS Part TX-2400 S-Band Transmitter and
+            % a 20cm Diameter In-House Parabolic Antenna (Values Estimated)
+       
+            
+        % Transmitter Information _________________________________________
+        % Transmitter Power [Input]
+        trans_power = 2.5;  % watts 
+        
+        % Return Loss [Input]
+        return_loss = -20*log10(0.239543726);  % dB
+        
+        % Return Loss Power [Calculation]
+        return_loss_power = trans_power;  % watts
+        
+        % Transmitter Power [Different Unit | Calculation]
+        trans_power2 = 10*log10(return_loss_power);  % dBW
+        
+        % Frequency [Input]
+        frequency = band_freq;  % GHz 
+        
+        % Transmitter Antenna Gain [Input]
+        trans_ant_gain = 8.953;    % dBi
+        
+        % Transmitted Antenna Beamwidth [Input] **Need to trace this**
+        trans_ant_beamw = 47.72;   % deg
+        
+        % Antenna Pointing Loss [Input - Estimated]
+        ant_point_loss1 = 2;  % dB
+        
+        % Circuit Loss [Input - Estimated] 
+        circuit_loss1 = 0.1;   % dB
+        
+        % Equivalent Isotropically Radiated Power [Calculation]
+        EIRP = trans_power2 + trans_ant_gain + ant_point_loss1 + circuit_loss1; % dBW
+        
+        % Given Variable and Calculation
+        a = 1;
+        b = -2*rad_moon*cos(pi/2+elev_angle*pi/180);
+        c = rad_moon^2-(rad_moon+alt_sat)^2;
+        
+        % Range [Calculation - Based on Quadratic Equation of a,b & c]
+        range = (-b+sqrt(b^2-4*a*c))/(2*a);  % km
+        
+        % Free Space Loss [Calculation]
+        free_space_loss = 87.6-20*log10(range*frequency*1000000000);  % dB 
+        
+        % Atmospheric Attenuation [Input - None bc Moon has no atmosphere]
+        atmospheric_attenuation = 0;  % dB 
+        
+        
+        
+        % Reciever Information_____________________________________________
+        % Reciever Antenna Diameter [Input]
+        rec_ant_diam = .2;   % meters
+        
+        % Antenna Efficiency [Input - Estimated]
+        ant_eff = 0.6;  %(percentage)
+        
+        % Reciever Antenna Gain [Calculation]
+        rec_ant_gain = 10*log10((ant_eff./100)*(pi*rec_ant_diam/(0.03/frequency))^2);% dB
+        
+        % Reciever Antenna Beamwidth [Calculation]
+        rec_ant_beamw = 21/(frequency*rec_ant_diam); % deg
+        
+        % Reciever Antenna Poining Loss [Input - Estimated]
+        ant_point_loss2 = 2; % dB
+        
+        % Radome Losses [Input - Estimated Insignificant]
+        radome_loss = 0;  % dB
+        
+        % Polarization Losses [Input - Estimated Insignificant]
+        polarization_loss = 0; % dB
+        
+        % Circuit Losses [Input - Estimated Insignificant]
+        circuit_loss2 = 0.1;  % dB
+        
+        % Recieved Signal Power [Calculation]
+        Pt = EIRP + free_space_loss + atmospheric_attenuation + rec_ant_gain + polarization_loss + ...
+            ant_point_loss2 + circuit_loss2 + radome_loss;  % dBW
+        
+        % System Noise Temperature [Input - Estimated (Will vary for each
+        % connection type even with same parts)]
+        sys_noise_temp = 350;  % K 
+        
+        % System Noise Temperature [Calculation - Different Unit]
+        sys_noise_temp2 = 10*log10(sys_noise_temp);  % dB
+        
+        
+        
+        % Link Margin Calculation__________________________________________
+        % Antenna Gain to Noise Temperature [Calculation]
+        rec_GT = rec_ant_gain + polarization_loss + ant_point_loss2 + radome_loss + circuit_loss2 - ...
+            sys_noise_temp2;  % dB/K
+        
+        % System Noise Spectral Density [Calculation]
+        No = sys_noise_temp2 - 228.602;  % dBw/Hz
+        
+        % Signal to Noise Spectral Density Ratio [Calculation]
+        PrNo = EIRP + free_space_loss + rec_ant_gain + 228.6 - sys_noise_temp2; % dB
+        
+        % Bit Rate [Input]
+        bit_rate = 6;  % Mbps 
+        
+        % Bit Rate [Calculation - Different Units]
+        bit_rate2 = 10*log10(bit_rate*1000000); % dB
+        
+        % Energy per bit to noise power spectral density ratio Availible
+        % [Calculation]
+        EbNo_avail = PrNo - bit_rate2;  % dB
+        
+        % Energy per bit to noise power spectral density ratio Availible
+        % [Calculation]
+        EbNo_req = 1;  % dB / Input
+        
+        % Recieved System Implementation Loss [Input - Estimated Insignificant]
+        rec_sys_implementation_loss = 0;  % dB
+        
+        % Link Margin [Caclulated]
+        link_margin = EbNo_avail - EbNo_req + rec_sys_implementation_loss; % dB
+        
+        % Storing Link Margin for Each Altitude for Each Frequency Type
+        if(band_freq == s_band.frequency)
+        s_band.linkbudget(i,1) = link_margin; % make altitude list for s-band
+        else
+        x_band.linkbudget(i,1) = link_margin; % make altitude list for x-band
+        end
+        
+
+        
+        % Number of Satellites Calculation
+        alpha = alt_sat*tand(0.5*rec_ant_beamw);
+        theta = 2*asind(alpha/rad_moon);
+        arc = (theta/360)*2*pi*rad_moon;
+        num_sat = (2*pi*rad_moon)/arc;
+        
+        if(band_freq == s_band.frequency)
+        s_band.satellites(i,1) = floor(num_sat); % make altitude list for s-band
+        else
+        x_band.satellites(i,1) = floor(num_sat); % make altitude list for x-band
+        end
+        
+        i=i+1;
+    end
+    
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Refernce Links
+% https://sst-soa.arc.nasa.gov/03-power
+% https://nanoavionics.com/cubesat-components/cubesat-electrical-power-system-eps/
+
